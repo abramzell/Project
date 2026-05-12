@@ -101,6 +101,10 @@
     return MOODS.find((item) => item.mood === mood);
   }
 
+  function generateEntryId() {
+    return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+  }
+
   function sortEntriesNewest(entries) {
     return [...entries].sort((a, b) => {
       const dateComparison = b.date.localeCompare(a.date);
@@ -303,7 +307,7 @@
     const now = new Date().toISOString();
 
     return {
-      id: entry.id || fallback.id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+      id: entry.id || fallback.id || generateEntryId(),
       date: typeof entry.date === "string" ? entry.date : getTodayDate(),
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
@@ -346,9 +350,7 @@
     }
 
     const entry = {
-      id:
-        existingForToday?.id ||
-        (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.floor(Math.random() * 1000)}`),
+      id: existingForToday?.id || generateEntryId(),
       date: today,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
