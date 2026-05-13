@@ -35,8 +35,8 @@
       entries[index] = {
         ...existing,
         ...entry,
-        id: entry.id || existing.id,
-        createdAt: existing.createdAt || entry.createdAt,
+        id: existing.id,
+        createdAt: existing.createdAt,
         updatedAt: entry.updatedAt || new Date().toISOString(),
       };
     } else {
@@ -302,9 +302,7 @@
       .map((entry) => normalizeEntry(entry));
 
     allEntries.forEach((candidate) => {
-      const key =
-        candidate.id ||
-        `${candidate.date}|${candidate.createdAt || ""}|${candidate.updatedAt || ""}|${candidate.mood}|${candidate.notes}`;
+      const key = candidate.id;
       const existing = mergedByKey.get(key);
 
       if (!existing) {
@@ -325,15 +323,17 @@
   function normalizeEntry(entry, fallback = {}) {
     const moodMeta = getMoodByKey(entry.mood) || getMoodByKey(fallback.mood) || MOODS[0];
     const now = new Date().toISOString();
+    const date = typeof entry.date === "string" ? entry.date : getTodayDate();
+    const createdAt = entry.createdAt || fallback.createdAt || now;
 
     return {
-      id: entry.id || fallback.id || generateEntryId(),
-      date: typeof entry.date === "string" ? entry.date : getTodayDate(),
+      id: entry.id || fallback.id || `${date}-${createdAt}`,
+      date,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
       label: moodMeta.label,
       notes: typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "",
-      createdAt: entry.createdAt || fallback.createdAt || now,
+      createdAt,
       updatedAt: entry.updatedAt || now,
     };
   }
