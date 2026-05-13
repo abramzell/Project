@@ -21,20 +21,22 @@
   }
 
   function getEntryByDate(date) {
-    return getEntries().find((entry) => entry.date === date);
+    const matches = getEntries().filter((entry) => entry.date === date);
+    if (matches.length === 0) return undefined;
+    return sortEntriesNewest(matches)[0];
   }
 
   function addOrUpdateEntry(entry) {
     const entries = [...getEntries()];
-    const index = entries.findIndex((current) => current.date === entry.date);
+    const index = entries.findIndex((current) => current.id === entry.id);
 
     if (index >= 0) {
       const existing = entries[index];
       entries[index] = {
         ...existing,
         ...entry,
-        id: existing.id,
-        createdAt: existing.createdAt,
+        id: entry.id || existing.id,
+        createdAt: existing.createdAt || entry.createdAt,
         updatedAt: entry.updatedAt || new Date().toISOString(),
       };
     } else {
@@ -124,7 +126,21 @@
 
   function renderWeeklySummary() {
     const today = new Date();
-    const entryMap = new Map(state.entries.map((entry) => [entry.date, entry]));
+    const entryMap = state.entries.reduce((map, entry) => {
+      const existing = map.get(entry.date);
+      if (!existing) {
+        map.set(entry.date, entry);
+        return map;
+      }
+
+      const existingStamp = existing.updatedAt || existing.createdAt || "";
+      const candidateStamp = entry.updatedAt || entry.createdAt || "";
+      if (candidateStamp > existingStamp) {
+        map.set(entry.date, entry);
+      }
+
+      return map;
+    }, new Map());
     const cells = [];
 
     for (let offset = 6; offset >= 0; offset -= 1) {
@@ -279,27 +295,31 @@
   }
 
   function mergeImportedEntries(importedEntries) {
-    const mergedByDate = new Map(sortEntriesNewest(state.entries).map((entry) => [entry.date, entry]));
+    const mergedByKey = new Map();
 
-    importedEntries.forEach((candidate) => {
-      if (!candidate || typeof candidate !== "object" || typeof candidate.date !== "string") {
-        return;
-      }
+    const allEntries = [...state.entries, ...importedEntries]
+      .filter((entry) => entry && typeof entry === "object")
+      .map((entry) => normalizeEntry(entry));
 
-      const existing = mergedByDate.get(candidate.date);
+    allEntries.forEach((candidate) => {
+      const key =
+        candidate.id ||
+        `${candidate.date}|${candidate.createdAt || ""}|${candidate.updatedAt || ""}|${candidate.mood}|${candidate.notes}`;
+      const existing = mergedByKey.get(key);
+
       if (!existing) {
-        mergedByDate.set(candidate.date, normalizeEntry(candidate));
+        mergedByKey.set(key, candidate);
         return;
       }
 
       const existingStamp = existing.updatedAt || existing.createdAt || "";
       const candidateStamp = candidate.updatedAt || candidate.createdAt || "";
       if (candidateStamp > existingStamp) {
-        mergedByDate.set(candidate.date, normalizeEntry(candidate, existing));
+        mergedByKey.set(key, candidate);
       }
     });
 
-    return sortEntriesNewest([...mergedByDate.values()]);
+    return sortEntriesNewest([...mergedByKey.values()]);
   }
 
   function normalizeEntry(entry, fallback = {}) {
@@ -343,20 +363,15 @@
     const moodMeta = getMoodByKey(state.selectedMood);
     const today = getTodayDate();
     const now = new Date().toISOString();
-    const existingForToday = getEntryByDate(today);
-
-    if (existingForToday && !window.confirm("You already have an entry for today. Update it?")) {
-      return;
-    }
 
     const entry = {
-      id: existingForToday?.id || generateEntryId(),
+      id: generateEntryId(),
       date: today,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
       label: moodMeta.label,
       notes: ui.notes.value.trim(),
-      createdAt: existingForToday?.createdAt || now,
+      createdAt: now,
       updatedAt: now,
     };
 
@@ -367,7 +382,7 @@
     setMainCharCount();
     state.selectedMood = null;
     renderMoodButtons(ui.moodGrid, null);
-    showToast(existingForToday ? "Entry updated." : "Entry saved.");
+    showToast("Entry saved.");
   }
 
   function handleHistoryClick(event) {
