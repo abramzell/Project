@@ -28,7 +28,7 @@
       const latestStamp = latest.updatedAt || latest.createdAt || "";
       const currentStamp = current.updatedAt || current.createdAt || "";
       return currentStamp > latestStamp ? current : latest;
-    }, undefined);
+    }, null);
   }
 
   function addOrUpdateEntry(entry) {
@@ -110,6 +110,15 @@
 
   function generateEntryId() {
     return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+  }
+
+  function hashString(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return (hash >>> 0).toString(16);
   }
 
   function sortEntriesNewest(entries) {
@@ -327,19 +336,23 @@
 
   function normalizeEntry(entry, fallback = {}) {
     const moodMeta = getMoodByKey(entry.mood) || getMoodByKey(fallback.mood) || MOODS[0];
-    const now = new Date().toISOString();
     const date = typeof entry.date === "string" ? entry.date : getTodayDate();
-    const createdAt = entry.createdAt || fallback.createdAt || now;
+    const createdAt = entry.createdAt || fallback.createdAt || `${date}T00:00:00.000Z`;
+    const updatedAt = entry.updatedAt || fallback.updatedAt || createdAt;
+    const notes = typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "";
+    const deterministicId = `import-${hashString(
+      `${date}|${moodMeta.mood}|${notes}|${createdAt}|${updatedAt}`
+    )}`;
 
     return {
-      id: entry.id || fallback.id || generateEntryId(),
+      id: entry.id || fallback.id || deterministicId,
       date,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
       label: moodMeta.label,
-      notes: typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "",
+      notes,
       createdAt,
-      updatedAt: entry.updatedAt || now,
+      updatedAt,
     };
   }
 
