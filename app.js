@@ -24,7 +24,7 @@
     const matches = getEntries().filter((entry) => entry.date === date);
     if (matches.length === 0) return undefined;
     return matches.reduce((latest, current) => {
-      if (!latest) return current;
+      if (latest === null) return current;
       const latestStamp = latest.updatedAt || latest.createdAt || "";
       const currentStamp = current.updatedAt || current.createdAt || "";
       return currentStamp > latestStamp ? current : latest;
@@ -341,7 +341,7 @@
     const updatedAt = entry.updatedAt || fallback.updatedAt || createdAt;
     const notes = typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "";
     const deterministicId = `import-${hashString(
-      `${date}|${moodMeta.mood}|${notes}|${createdAt}|${updatedAt}`
+      JSON.stringify({ date, mood: moodMeta.mood, notes, createdAt, updatedAt })
     )}`;
 
     return {
