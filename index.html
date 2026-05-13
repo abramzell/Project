@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mood Tracker</title>
+    <base href="./" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app" aria-labelledby="app-title">
+      <header class="header">
+        <h1 id="app-title">Mood Tracker</h1>
+        <p class="subtitle">Track one mood entry a day and watch your patterns over time.</p>
+      </header>
+
+      <section class="panel" aria-labelledby="entry-title">
+        <h2 id="entry-title">Today's Mood</h2>
+        <form id="entry-form">
+          <fieldset>
+            <legend class="sr-only">Choose your mood</legend>
+            <div class="mood-grid" id="mood-grid">
+              <button type="button" class="mood-btn" data-mood="great" data-emoji="😄" data-label="Great" aria-pressed="false">😄 <span>Great</span></button>
+              <button type="button" class="mood-btn" data-mood="good" data-emoji="🙂" data-label="Good" aria-pressed="false">🙂 <span>Good</span></button>
+              <button type="button" class="mood-btn" data-mood="okay" data-emoji="😐" data-label="Okay" aria-pressed="false">😐 <span>Okay</span></button>
+              <button type="button" class="mood-btn" data-mood="low" data-emoji="😕" data-label="Low" aria-pressed="false">😕 <span>Low</span></button>
+              <button type="button" class="mood-btn" data-mood="rough" data-emoji="😢" data-label="Rough" aria-pressed="false">😢 <span>Rough</span></button>
+            </div>
+          </fieldset>
+
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" maxlength="280" rows="4" placeholder="How did your day feel?"></textarea>
+          <p class="char-count" id="notes-count" aria-live="polite">0 / 280</p>
+
+          <button class="primary-btn" type="submit">Save Entry</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="summary-title">
+        <h2 id="summary-title">Summary</h2>
+        <div id="weekly-summary" class="weekly-summary" aria-label="Last 7 days mood summary"></div>
+        <div class="stats">
+          <p><strong>Total entries:</strong> <span id="total-entries">0</span></p>
+          <p><strong>Most frequent mood:</strong> <span id="most-frequent">—</span></p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="history-title">
+        <h2 id="history-title">Mood History</h2>
+        <div id="history-list" class="history-list"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="data-title">
+        <h2 id="data-title">Data Management</h2>
+        <div class="data-actions">
+          <button id="export-btn" type="button">Export Data</button>
+          <button id="import-btn" type="button">Import Data</button>
+          <button id="clear-btn" type="button" class="danger-btn">Clear All Data</button>
+          <input id="import-input" type="file" accept=".json,application/json" class="sr-only" />
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="edit-modal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-modal-title"
+    >
+      <div class="modal-content">
+        <h3 id="edit-modal-title">Edit Entry</h3>
+        <form id="edit-form">
+          <fieldset>
+            <legend class="sr-only">Choose updated mood</legend>
+            <div class="mood-grid" id="edit-mood-grid">
+              <button type="button" class="mood-btn edit-mood-btn" data-mood="great" data-emoji="😄" data-label="Great" aria-pressed="false">😄 <span>Great</span></button>
+              <button type="button" class="mood-btn edit-mood-btn" data-mood="good" data-emoji="🙂" data-label="Good" aria-pressed="false">🙂 <span>Good</span></button>
+              <button type="button" class="mood-btn edit-mood-btn" data-mood="okay" data-emoji="😐" data-label="Okay" aria-pressed="false">😐 <span>Okay</span></button>
+              <button type="button" class="mood-btn edit-mood-btn" data-mood="low" data-emoji="😕" data-label="Low" aria-pressed="false">😕 <span>Low</span></button>
+              <button type="button" class="mood-btn edit-mood-btn" data-mood="rough" data-emoji="😢" data-label="Rough" aria-pressed="false">😢 <span>Rough</span></button>
+            </div>
+          </fieldset>
+
+          <label for="edit-notes">Notes</label>
+          <textarea id="edit-notes" maxlength="280" rows="4"></textarea>
+          <p class="char-count" id="edit-notes-count" aria-live="polite">0 / 280</p>
+
+          <div class="modal-actions">
+            <button type="button" id="cancel-edit-btn">Cancel</button>
+            <button type="submit" class="primary-btn">Update Entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
