@@ -23,7 +23,12 @@
   function getEntryByDate(date) {
     const matches = getEntries().filter((entry) => entry.date === date);
     if (matches.length === 0) return undefined;
-    return sortEntriesNewest(matches)[0];
+    return matches.reduce((latest, current) => {
+      if (!latest) return current;
+      const latestStamp = latest.updatedAt || latest.createdAt || "";
+      const currentStamp = current.updatedAt || current.createdAt || "";
+      return currentStamp > latestStamp ? current : latest;
+    }, undefined);
   }
 
   function addOrUpdateEntry(entry) {
@@ -327,7 +332,7 @@
     const createdAt = entry.createdAt || fallback.createdAt || now;
 
     return {
-      id: entry.id || fallback.id || `${date}-${createdAt}`,
+      id: entry.id || fallback.id || generateEntryId(),
       date,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
