@@ -341,7 +341,7 @@
     const updatedAt = entry.updatedAt || fallback.updatedAt || createdAt;
     const notes = typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "";
     const deterministicId = `import-${hashString(
-      JSON.stringify({ date, mood: moodMeta.mood, notes, createdAt, updatedAt })
+      JSON.stringify({ date, mood: moodMeta.mood, notes, createdAt })
     )}`;
 
     return {
