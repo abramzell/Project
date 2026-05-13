@@ -1,14 +1,14 @@
 # Mood Tracker
 
-Mood Tracker is a warm, client-side daily journaling app for logging one mood entry per day.
+Mood Tracker is a warm, client-side journaling app for logging moods throughout the day.
 
 ![screenshot](screenshot.png)
 
 ## Features
 
-- Log one entry per day with 5 moods: 😄 Great, 🙂 Good, 😐 Okay, 😕 Low, 😢 Rough
+- Log multiple entries per day with 5 moods: 😄 Great, 🙂 Good, 😐 Okay, 😕 Low, 😢 Rough
 - Optional notes (up to 280 characters) with live character count
-- Update an existing same-day entry after a confirmation prompt
+- Edit any saved entry at any time from mood history
 - View reverse-chronological history grouped by month
 - Click any history entry to edit it in a modal
 - Weekly 7-day emoji summary (`○` for missing days)
@@ -40,7 +40,7 @@ Data stays on your device unless you explicitly export it.
 ## Export / Import Data
 
 - **Export Data**: Click **Export Data** to download entries as a `.json` file.
-- **Import Data**: Click **Import Data** and select a previously exported `.json` file. Incoming data is merged by date.
+- **Import Data**: Click **Import Data** and select a previously exported `.json` file. Incoming data is merged by entry identity, keeping the most recently updated version on duplicates.
 
 ## License
 

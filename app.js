@@ -21,12 +21,19 @@
   }
 
   function getEntryByDate(date) {
-    return getEntries().find((entry) => entry.date === date);
+    const matches = getEntries().filter((entry) => entry.date === date);
+    if (matches.length === 0) return undefined;
+    return matches.reduce((latest, current) => {
+      if (latest === null) return current;
+      const latestStamp = latest.updatedAt || latest.createdAt || "";
+      const currentStamp = current.updatedAt || current.createdAt || "";
+      return currentStamp > latestStamp ? current : latest;
+    }, null);
   }
 
   function addOrUpdateEntry(entry) {
     const entries = [...getEntries()];
-    const index = entries.findIndex((current) => current.date === entry.date);
+    const index = entries.findIndex((current) => current.id === entry.id);
 
     if (index >= 0) {
       const existing = entries[index];
@@ -105,6 +112,15 @@
     return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
   }
 
+  function hashString(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return (hash >>> 0).toString(16);
+  }
+
   function sortEntriesNewest(entries) {
     return [...entries].sort((a, b) => {
       const dateComparison = b.date.localeCompare(a.date);
@@ -124,7 +140,21 @@
 
   function renderWeeklySummary() {
     const today = new Date();
-    const entryMap = new Map(state.entries.map((entry) => [entry.date, entry]));
+    const entryMap = state.entries.reduce((map, entry) => {
+      const existing = map.get(entry.date);
+      if (!existing) {
+        map.set(entry.date, entry);
+        return map;
+      }
+
+      const existingStamp = existing.updatedAt || existing.createdAt || "";
+      const candidateStamp = entry.updatedAt || entry.createdAt || "";
+      if (candidateStamp > existingStamp) {
+        map.set(entry.date, entry);
+      }
+
+      return map;
+    }, new Map());
     const cells = [];
 
     for (let offset = 6; offset >= 0; offset -= 1) {
@@ -279,42 +309,50 @@
   }
 
   function mergeImportedEntries(importedEntries) {
-    const mergedByDate = new Map(sortEntriesNewest(state.entries).map((entry) => [entry.date, entry]));
+    const mergedByKey = new Map();
 
-    importedEntries.forEach((candidate) => {
-      if (!candidate || typeof candidate !== "object" || typeof candidate.date !== "string") {
-        return;
-      }
+    const allEntries = [...state.entries, ...importedEntries]
+      .filter((entry) => entry && typeof entry === "object")
+      .map((entry) => normalizeEntry(entry));
 
-      const existing = mergedByDate.get(candidate.date);
+    allEntries.forEach((candidate) => {
+      const key = candidate.id;
+      const existing = mergedByKey.get(key);
+
       if (!existing) {
-        mergedByDate.set(candidate.date, normalizeEntry(candidate));
+        mergedByKey.set(key, candidate);
         return;
       }
 
       const existingStamp = existing.updatedAt || existing.createdAt || "";
       const candidateStamp = candidate.updatedAt || candidate.createdAt || "";
       if (candidateStamp > existingStamp) {
-        mergedByDate.set(candidate.date, normalizeEntry(candidate, existing));
+        mergedByKey.set(key, candidate);
       }
     });
 
-    return sortEntriesNewest([...mergedByDate.values()]);
+    return sortEntriesNewest([...mergedByKey.values()]);
   }
 
   function normalizeEntry(entry, fallback = {}) {
     const moodMeta = getMoodByKey(entry.mood) || getMoodByKey(fallback.mood) || MOODS[0];
-    const now = new Date().toISOString();
+    const date = typeof entry.date === "string" ? entry.date : getTodayDate();
+    const createdAt = entry.createdAt || fallback.createdAt || `${date}T00:00:00.000Z`;
+    const updatedAt = entry.updatedAt || fallback.updatedAt || createdAt;
+    const notes = typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "";
+    const deterministicId = `import-${hashString(
+      JSON.stringify({ date, mood: moodMeta.mood, notes, createdAt })
+    )}`;
 
     return {
-      id: entry.id || fallback.id || generateEntryId(),
-      date: typeof entry.date === "string" ? entry.date : getTodayDate(),
+      id: entry.id || fallback.id || deterministicId,
+      date,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
       label: moodMeta.label,
-      notes: typeof entry.notes === "string" ? entry.notes.slice(0, 280) : "",
-      createdAt: entry.createdAt || fallback.createdAt || now,
-      updatedAt: entry.updatedAt || now,
+      notes,
+      createdAt,
+      updatedAt,
     };
   }
 
@@ -343,20 +381,15 @@
     const moodMeta = getMoodByKey(state.selectedMood);
     const today = getTodayDate();
     const now = new Date().toISOString();
-    const existingForToday = getEntryByDate(today);
-
-    if (existingForToday && !window.confirm("You already have an entry for today. Update it?")) {
-      return;
-    }
 
     const entry = {
-      id: existingForToday?.id || generateEntryId(),
+      id: generateEntryId(),
       date: today,
       mood: moodMeta.mood,
       emoji: moodMeta.emoji,
       label: moodMeta.label,
       notes: ui.notes.value.trim(),
-      createdAt: existingForToday?.createdAt || now,
+      createdAt: now,
       updatedAt: now,
     };
 
@@ -367,7 +400,7 @@
     setMainCharCount();
     state.selectedMood = null;
     renderMoodButtons(ui.moodGrid, null);
-    showToast(existingForToday ? "Entry updated." : "Entry saved.");
+    showToast("Entry saved.");
   }
 
   function handleHistoryClick(event) {
